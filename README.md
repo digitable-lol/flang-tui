@@ -38,6 +38,11 @@ language's own convention, and this repository follows it.
 borrowed from digitdisk. There is no Python and no JavaScript in this tree, and
 that is one of its four checks.
 
+`tools/sverka/` is the differ: a script plus Go files that get dropped into a
+disposable clone of digitdisk. It is the only hand-written Go in the tree, and
+it is here for exactly one reason — so that anybody, not only their author, can
+re-check the numbers in this README.
+
 ## Getting it
 
 The flang compiler is a single binary that needs only `cc`:
@@ -65,11 +70,20 @@ a hand.
 
 ## Diff against digitdisk: 494,719 inputs, 0 divergences
 
-The run: a clone of digitdisk at `7ea03ed` (0.5.0); the modules emitted to Go
-and dropped into its own `go.mod`; the differ lives *inside* the
+**Reproduced by one command:**
+
+```sh
+./tools/sverka/run.sh              # inputs and divergences, piece by piece
+./tools/sverka/run.sh --пределы    # plus step costs and where the limits bind
+./tools/sverka/run.sh --замер      # plus the frame benchmark, with and without postconditions
+```
+
+The script clones digitdisk itself at the pinned `7ea03ed` (0.5.0), emits the
+modules to Go, drops them into its `go.mod` and puts the differ *inside* the
 `internal/report` and `internal/ui` packages — there is no other way to reach
-the unexported `percent`, `clip`, `spark`, `handle`. Every row is `go test -v`
-output.
+the unexported `percent`, `clip`, `spark`, `handle`. The clone is disposable and
+lives outside both repositories: nothing is committed into digitdisk's tree.
+Every row below is `go test -v` output from that run.
 
 | Piece | Reference | Inputs | Divergences |
 |---|---|---:|---:|
