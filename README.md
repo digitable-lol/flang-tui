@@ -68,7 +68,7 @@ a hand.
 
 ---
 
-## Diff against digitdisk: 494,719 inputs, 0 divergences
+## Diff against digitdisk: 494,869 inputs, 0 divergences
 
 **Reproduced by one command:**
 
@@ -103,17 +103,17 @@ Every row below is `go test -v` output from that run.
 | Уложить раздел (window) | `ui.screen.frame` | 5,940 | 0 |
 | Дописать замер (push) | `ui.push` | 600 | 0 |
 | График (spark) | `ui.Theme.spark` | 837 | 0 |
-| Переключить (tab switch) | `ui.screen.handle` | 150 | 0 |
+| Переключить (tab switch + scroll reset) | `ui.screen.handle` | 300 | 0 |
 | Прокрутить (scroll) | `ui.screen.handle` + `frame` | 2,835 | 0 |
 | Высота тела (body height) | `ui.screen.bodyHeight` | 201 | 0 |
 | Куб 256 (cube) | `ui.cube256` | 140,608 | 0 |
 | Цвет (colour seq) | `ui.Theme.seq` | 24,576 | 0 |
-| **Total** | | **494,317** | **0** |
+| **Total** | | **494,467** | **0** |
 
 (A further 402 diff inputs — `detectDepth`, `UsableTERM`, `PaletteByName` —
 belong to the sibling repository
 [flang-env](https://github.com/digitable-lol/flang-env), and so do their
-numbers. The total across both repositories is 494,719.)
+numbers. The total across both repositories is 494,869.)
 
 **Two caveats, without which the table would be lying.**
 

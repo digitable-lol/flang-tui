@@ -362,9 +362,11 @@ func TestSverkaTabs(t *testing.T) {
 			return func() rtt.Value { return ft.VariantNomerom(rtt.Number(float64(n))) }
 		}(d), fmt.Sprintf("цифра %d", d)})
 	}
+	// Прокрутка стоит на 100 нарочно: при высоте тела 35 ни шаг вниз, ни
+	// страница вверх в ноль не попадают, и сброс отличим от обычного шага.
 	for tab := 0; tab < len(sections); tab++ {
 		for _, c := range kases {
-			s := &screen{tab: tab, rows: 40}
+			s := &screen{tab: tab, rows: 40, scroll: 100}
 			s.handle(c.k, nil)
 			v, err := ft.Pereklyuchit(ctx, ft.SozdatVkladki(rtt.Number(float64(tab)), rtt.Number(float64(len(sections)))), c.mk())
 			if err != nil {
@@ -377,6 +379,14 @@ func TestSverkaTabs(t *testing.T) {
 				}
 			}
 			ta.eq(fmt.Sprintf("tab=%d,%s", tab, c.name), fmt.Sprint(s.tab), fmt.Sprint(got))
+
+			// Переключение вкладки сбрасывает прокрутку — это правило эталона,
+			// и оно сверяется, а не подразумевается.
+			r, err := ft.ProkrutkuSbrosit(ctx, c.mk())
+			if err != nil {
+				t.Fatalf("flang: %v", err)
+			}
+			ta.eq(fmt.Sprintf("сброс tab=%d,%s", tab, c.name), fmt.Sprint(s.scroll == 0), fmt.Sprint(r.Flag))
 		}
 	}
 	ta.strict(t)
