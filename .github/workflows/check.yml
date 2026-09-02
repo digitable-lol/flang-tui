@@ -1,0 +1,60 @@
+# SPDX-FileCopyrightText: 2026 Marat Zimnurov <zimtir@mail.ru>
+# SPDX-License-Identifier: BSD-2-Clause
+#
+# Проверки flang-tui на каждый толчок.
+#
+# Компилятор flang — один двоичный файл, которому нужен только `cc`, поэтому он
+# собирается прямо здесь из своего же клона: ни Node, ни Python в этом
+# конвейере нет ни в одном шаге.
+name: Проверки
+
+"on":
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  linux:
+    name: Linux — проверка, примеры, печать в Go и в C
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26.5"
+          check-latest: false
+
+      - name: Компилятор flang
+        run: |
+          git clone --depth 1 https://github.com/digitable-lol/flang.git /tmp/flang-src
+          make -C /tmp/flang-src/bootstrap -j4
+          echo "/tmp/flang-src/bootstrap" >> "$GITHUB_PATH"
+
+      - name: Разбор, типы, завершаемость, примеры
+        run: make проверка
+
+      - name: Ведомость доказательств — печатается, а не подразумевается
+        run: |
+          for m in flang/*.flang; do
+            echo "=== $m"
+            flang check --proof "$m" | tail -8
+          done
+
+      - name: Печать в Go и в C, сборка обеих
+        run: make печать
+
+      - name: Лицензионный сторож
+        run: make лицензии
+
+      - name: Дерево чистое
+        run: |
+          make чисто
+          if [ -n "$(git status --porcelain)" ]; then
+            git status --porcelain
+            echo "Проверки наследили в дереве." >&2
+            exit 1
+          fi
