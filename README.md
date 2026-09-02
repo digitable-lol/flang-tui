@@ -284,8 +284,9 @@ terminal, and if they must, the limit is raised at emit time
   digits. So the functions come in two ranks and are never mixed: `«Байты»`,
   `«Проценты»`, `«Длительность»`, `«Прошло»`, `«Заняло»` match the reference
   exactly; `«Байты знаком»`, `«Проценты знаком»`, `«Разрядами»`,
-  `«Байты десятично»` are ours, and there is nothing to diff them against. The
-  ledger lists them as undiffed.
+  `«Байты десятично»` are ours, and there is nothing to diff them against. That
+  is why they are absent from the diff table above: only what has a reference
+  appears there.
 * **digitdisk has no Home/End on tabs** — those sequences are not decoded at
   all. The `«Первая»` and `«Последняя»` variants are our addition, with no
   reference. Scroll's `«В начало»` does have one (`g`); `«В конец»` does not.
