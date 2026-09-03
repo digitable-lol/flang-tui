@@ -188,8 +188,6 @@ An example pins a value; it does not notice if digitdisk changes. Nothing here
 claims otherwise.
 ---
 
----
-
 ## The second diff: the reference moved, and reading would not have caught it
 
 **The reference the 2 September diff ran against no longer exists at that
