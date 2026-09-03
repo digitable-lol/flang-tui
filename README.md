@@ -13,11 +13,20 @@ strings go out.
 It is *emitted* to **Go** and to **C**, so it travels inside somebody else's
 binary — no runtime, no Node, no interpreter.
 
-The reference behaviour is [digitdisk](https://github.com/digitable-lol/digitdisk),
-`host/internal/{report,ui,sysinfo}`. Every piece **was** diffed against it over
-a grid of 494,467 inputs, once, and the reference's answers at the boundaries
-now live here as examples. The diff itself is over; that is said in full below,
-with the numbers and with the commit the differ can be fetched from.
+The reference behaviour is [digitdisk](https://github.com/digitable-lol/digitdisk).
+There were TWO diffs, and the second was needed because the reference moved: in
+0.5.0 numbers were printed in six places across `host/internal/{report,ui,sysinfo}`;
+in 0.8.0 all of it sits in one `host/internal/lang/format.go`, and that file is
+BILINGUAL.
+
+| Diff | Reference | Inputs | Divergences |
+|---|---|---:|---:|
+| 2 September 2026 | digitdisk 0.5.0 (`7ea03ed`) | 494,467 | 0 |
+| 3 September 2026 | digitdisk 0.8.0 (`df60027`) | 1,944,268 | 0 |
+
+The reference's answers at the boundaries live here as examples — 590 of them,
+run on every push. The diffs themselves are over; that is said in full below,
+with the numbers and the commits.
 
 **There is no second language in this tree.** Not Go, not Python, not
 JavaScript, and no `Makefile` either: the entry point is `./ярлык` — 112 lines
@@ -37,7 +46,7 @@ tree: `./ярлык проверка` is what a person types, not an internal na
 |---|---|---|---|
 | `flang/screen.flang` | «Screen» | fill bar, clipping by *printing* cells, fitting a section into a height, the whole frame | `ui/widgets.go` `bar`/`clip`/`plainWidth`, `ui/screen.go` `frame` |
 | `flang/colour.flang` | «Colour» | truecolour, the xterm-256 cube, the sixteen basics | `ui/theme.go` `seq`, `cube256` |
-| `flang/format.flang` | «Format» | sizes, shares, percentages, durations, grouped counters, the em-dash placeholder, truncation | `report/report.go`, `report/places.go`, `ui/widgets.go`, `ui/screen.go`, `sysinfo/sysinfo.go` |
+| `flang/format.flang` | «Format» | sizes, shares, percentages, durations, grouped counters, the em-dash placeholder, truncation, **column alignment**, **both editions: Russian and English** | all of `lang/format.go`, `ui/widgets.go` `fit`/`right`; the old 0.5.0 addresses — `report/report.go`, `report/places.go`, `ui/screen.go`, `sysinfo/sysinfo.go` |
 | `flang/history.flang` | «History» | running-graph history and its row of glyphs | `ui/screen.go` `push`, `ui/widgets.go` `spark` |
 | `flang/tabs.flang` | «Tabs» | tabs: state plus keypress → state | `ui/screen.go` `handle` |
 | `flang/scroll.flang` | «Scroll» | scrolling: offset, viewport height, content length, keypress → offset | `ui/screen.go` `handle` + `frame` |
@@ -179,6 +188,143 @@ An example pins a value; it does not notice if digitdisk changes. Nothing here
 claims otherwise.
 ---
 
+## The second diff: the reference moved, and reading would not have caught it
+
+**The reference the 2 September diff ran against no longer exists at that
+address.** digitdisk 0.5.0 printed numbers in SIX places — `report.Bytes`,
+`report.pct`, `report/places.since`, `ui.percent`, `ui.lasted`,
+`sysinfo.HumanDuration`. In 0.8.0 (`df60027`) all of it sits in ONE file,
+`host/internal/lang/format.go`, 182 lines, and `report/dict_report.go` states
+the rule outright: "a report holds no `%.1f` of its own". In the entire
+hand-written reference tree exactly one `%.Nf` is left, and it is inside that
+sentence.
+
+The move brought three things the old reference did not have in any form:
+
+* an **English edition** of the units — `{"Б","КиБ","МиБ","ГиБ","ТиБ","ПиБ"}`
+  against `{"B","KiB","MiB","GiB","TiB","PiB"}`;
+* a **Russian decimal comma**, and a **NON-BREAKING SPACE U+00A0** between the
+  thousands (a comma in English). In the reference tree the bytes `C2 A0` live
+  in exactly two files, `lang/format.go` and `lang/lang_test.go`, nowhere else;
+* **`Since` changed its answer**: under a minute it now prints seconds ("59 с"),
+  where the old `places.since` printed "0 мин".
+
+That last one is precisely the drift one library instead of three copies is
+meant to prevent — except it went the other way: Go moved, flang stood still,
+and no amount of reading would have shown it. Hence TWO functions here, not one
+corrected: **`«Прошло»` is the 0.5.0 answer, `«Назад»` is the 0.8.0 answer.**
+They cannot quietly agree; the caller chooses.
+
+### What was added
+
+| What | Functions | Reference in 0.8.0 |
+|---|---|---|
+| column alignment | `«Уместить»`, `«Справа»` | `ui/widgets.go` `fit`, `right` |
+| both editions of sizes | `«Байты языком»`, `«Единица байт языком»`, `«Байты как есть»` | `lang.Bytes`, `lang.RawBytes` |
+| grouped digits, both editions | `«Разряды языком»` | `lang.Num` |
+| decimals and percentages with a digit count | `«Дробью языком»`, `«Процентом»`, `«Процентом языком»` | `lang.Dec`, `lang.Pct` |
+| durations, both editions | `«Назад»`, `«Дней»`, `«Заняло языком»`, `«Каждые»`, `«Длительность языком»` | `lang.Since`, `Days`, `Millis`, `Every`, `Uptime` |
+
+Three older functions — `«Байты знаком»`, `«Заняло знаком»`, `«Длительность»` —
+no longer have bodies: they call the bilingual ones with `"ru"`. One rule
+instead of two, and that the move broke nothing was proved by the 276 existing
+examples passing after the substitution without a single edit.
+
+### The run: 1,944,268 inputs, 0 divergences
+
+**3 September 2026.** flang 0.6.2 (trunk `8616eef1`), digitdisk pinned at
+`df60027` (0.8.0), Go 1.26.5, Linux.
+
+| Piece | Reference | Inputs | Divergences |
+|---|---|---:|---:|
+| Байты языком ×2 languages | `lang.Bytes` | 21,844 | 0 |
+| Разряды языком ×2 languages | `lang.Num` | 21,004 | 0 |
+| Байты как есть ×2 languages | `lang.RawBytes` | 21,004 | 0 |
+| Дробью языком ×4 precisions ×2 languages | `lang.Dec` | 384,152 | 0 |
+| Процентом языком ×3 precisions ×2 languages | `lang.Pct` | 123,006 | 0 |
+| Дней ×2 languages | `lang.Days` | 44,002 | 0 |
+| Назад ×2 languages | `lang.Since` | 114,370 | 0 |
+| Заняло языком ×2 languages | `lang.Millis` | 266,668 | 0 |
+| Каждые ×2 languages | `lang.Every` | 400,000 | 0 |
+| Длительность языком ×2 languages | `lang.Uptime` | 545,490 | 0 |
+| Уместить | `ui.fit` | 1,364 | 0 |
+| Справа | `ui.right` | 1,364 | 0 |
+| **Total** | | **1,944,268** | **0** |
+
+The edges are named, not assumed: 0, 1 byte, 1023, 1024, the KiB/MiB/GiB/TiB/PiB
+boundaries (powers of two with a ±2 neighbourhood), negatives, 2⁵³ and above,
+fractional shares in eighths and thousandths, 0 % and 100 %, `−0`, the empty
+string, width 0 and negative widths, a string of non-breaking spaces.
+
+### F4 — negative zero. **FIRED, found by the run, fixed, re-measured.**
+
+The first run gave **8 divergences out of 1,941,540**, and all eight were ONE
+input: `−0`, in eight combinations of language and precision. The reference
+prints `-0,0`; this printed `0,0`.
+
+The cause is not rounding. `strconv.FormatFloat` prints the **sign bit**, while
+`−0 меньше 0` is FALSE — negative zero equals zero under every comparison. The
+naive spelling dropped the minus exactly where the reference writes it. The cure
+is division: `1 / −0` is `−Infinity` and `1 / +0` is `+Infinity`, and the
+language does not mind dividing by zero — it yields an infinity, not a refusal.
+Hence `«Знак минус»`, and `«Дробью»` asks it for the sign instead of asking a
+comparison. After the fix: **0 divergences on the same inputs.**
+
+Reading would not have found it: `−0` does not stand out in a source file, and
+no example produced one. The grid did.
+
+### A negative control on every check, the diff included
+
+A check nobody has tried to break is not a check. All four were tried:
+
+| Check | What was broken on purpose | Answer |
+|---|---|---|
+| `./ярлык проверка` | an example's answer, `60,0 КиБ` → `60,1 КиБ` | exit 1, both the example and the function named |
+| `./ярлык ведомость` | postcondition `«ширина ровно заказанная»` made plainly false | exit 1 |
+| `./ярлык лицензии` | a `.go` file **added to the index** | exit 1, "бед 1" |
+| the diff | `"KiB"` → `"KB"` in the English table | 3,236 divergences out of 10,922; the English column red, the Russian one still zero |
+
+The last row deserves a second read: the control over the licence guard **did
+not fire the first time** — the file was untracked, and the guard reads
+`git ls-files`, which does not see untracked files at all. The guard was right;
+the control was wrong. Negative controls need checking too.
+
+### Reference answers turned into examples
+
+As the first time, the expected values were **computed by digitdisk itself**,
+not typed by hand: 69 examples (55 in `lang`, 14 in `ui`) were run by a one-off
+differ against `df60027` and matched to the character — 0 divergences. Among
+them the pair `fit`/`right` were ported for at all: the string `«1 234 567 Б»`
+with NON-BREAKING spaces and the same string with ordinary ones differ in BYTES
+and agree in CODE POINTS, and both yield the same column width. The reference's
+own columns in `report/*.go` are laid out with `%-28s`, i.e. by BYTES, and they
+skew on Russian text; `fit`/`right` count correctly, and those are what was
+ported.
+
+Examples in the modules are now **590** (was 508); in «Format», **282** (was
+200).
+
+### How to repeat it
+
+The differ, like the first one, **is not committed**: `.go` is a foreign
+language here and the guard watches for it. The skeleton comes out of history
+with the same `git show` on `6bb627cc45966bfc24cc2680e1eec2196fb2a43d`
+(`tools/sverka/run.sh` plus the `tally`/`call1`/`call2` scaffolding); against
+0.8.0 three things change:
+
+* `DIGITDISK_REF=df60027`;
+* ONE module is emitted (`flang/format.flang`), and its Go module name must be
+  anything but `flangformat`: digitdisk already keeps the `ui-flang/flang-tui`
+  submodule under that name, and `go mod` refuses two replacements;
+* the differ goes into `host/internal/lang/` (that is where all the arithmetic
+  lives, and `nbsp` is unexported) and into `host/internal/ui/` (`fit` and
+  `right` are unexported there) — the function-to-method pairs are in the run
+  table above.
+
+**And it remains a one-off argument, not a running check.** It is not in the
+pipeline and will not be: `./ярлык проверка` runs 590 examples on every push,
+and that is 0.03 % of the grid — but always.
+
 ## The ledger: what actually carries each claim
 
 Three words, and they never blur. **«доказано»** (proved) — about *all* inputs.
@@ -191,24 +337,25 @@ are `flang check --proof` output.
 |---|---:|---|---:|---:|---:|---:|---:|
 | Screen | 19 | yes | 25 | 4 | 15 | 6 | 101 |
 | Colour | 9 | yes | 5 | 1 | 4 | 0 | 53 |
-| Format | 33 | yes | 14 | 4 | 9 | 1 | 200 |
+| Format | 52 | yes | 18 | 5 | 12 | 1 | 282 |
 | History | 9 | yes | 8 | 3 | 5 | 0 | 51 |
 | Tabs | 5 | yes | 8 | 0 | 6 | 2 | 37 |
 | Scroll | 6 | yes | 7 | 0 | 7 | 0 | 66 |
-| **Total** | **81** | **81 of 81** | **67** | **12** | **46** | **9** | **508** |
+| **Total** | **100** | **100 of 100** | **71** | **13** | **49** | **9** | **590** |
 
 `tools/licensing.flang` is 22 functions, all total, 30 examples; `ярлыки.flang`
 is 5 functions, all total, 6 examples. No ledger is printed for the guard
 because it declares a `план`, whose laws the binary does not judge — and it says
 so itself.
 
-Examples went from 187 to 508 in this change: 321 of them are the reference's
-answers, carried in when the differ left (the section above). Claims did not
-move — 67, of which 12 proved. Adding examples does not prove anything, and the
-`сетка N` column grew for exactly that reason: a bigger grid is still a grid.
+Examples went from 187 to 590: 390 of them are the reference's answers, carried
+in by the two diffs (the sections above). Claims went from 67 to 71 and proved
+ones from 12 to 13 — added by FOUR new functions, not by 82 new examples. Adding
+examples does not prove anything, and the `сетка N` column grows for exactly
+that reason: a bigger grid is still a grid.
 
-Twelve proved claims is 18% of sixty-seven. The rest is grid and declared. That
-is written down as it is; nobody here will call a grid a proof.
+Thirteen proved claims is 18% of seventy-one. The rest is grid and declared.
+That is written down as it is; nobody here will call a grid a proof.
 
 ---
 
