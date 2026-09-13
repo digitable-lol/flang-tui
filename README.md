@@ -24,8 +24,8 @@ BILINGUAL.
 | 2 September 2026 | digitdisk 0.5.0 (`7ea03ed`) | 494,467 | 0 |
 | 3 September 2026 | digitdisk 0.8.0 (`df60027`) | 1,944,268 | 0 |
 
-The reference's answers at the boundaries live here as examples — 590 of them,
-run on every push. The diffs themselves are over; that is said in full below,
+The reference's answers at the boundaries live here as examples; all 613 of
+them run on every push. The diffs themselves are over; that is said in full below,
 with the numbers and the commits.
 
 **There is no second language in this tree.** Not Go, not Python, not
@@ -112,11 +112,11 @@ modules, six manifests, and they can only live apart.
 
 ```
 colour.flang-package 18574 байт
-format.flang-package 98013 байт
+format.flang-package 100537 байт
 history.flang-package 26437 байт
-screen.flang-package 51739 байт
+screen.flang-package 59962 байт
 scroll.flang-package 27472 байт
-tabs.flang-package 20504 байт
+tabs.flang-package 23193 байт
 ```
 
 A package is the lock's payload plus a name, a version, a source and a **ledger
@@ -371,8 +371,10 @@ own columns in `report/*.go` are laid out with `%-28s`, i.e. by BYTES, and they
 skew on Russian text; `fit`/`right` count correctly, and those are what was
 ported.
 
-Examples in the modules are now **590** (was 508); in «Format», **282** (was
-200).
+After that diff the modules held **590** examples (was 508); in «Format»,
+**282** (was 200). There are **613** now: 23 were added later, while the
+unfounded claims in «Screen» and «Tabs» were being closed, and they have nothing
+to do with the reference.
 
 ### How to repeat it
 
@@ -392,7 +394,7 @@ with the same `git show` on `6bb627cc45966bfc24cc2680e1eec2196fb2a43d`
   table above.
 
 **And it remains a one-off argument, not a running check.** It is not in the
-pipeline and will not be: `./ярлык проверка` runs 590 examples on every push,
+pipeline and will not be: `./ярлык проверка` runs 613 examples on every push,
 and that is 0.03 % of the grid — but always.
 
 ## The ledger: what actually carries each claim
@@ -405,27 +407,34 @@ are `flang check --proof` output.
 
 | Module | Functions | All total | Claims | proved | grid | declared, not proved | Examples |
 |---|---:|---|---:|---:|---:|---:|---:|
-| Screen | 19 | yes | 25 | 4 | 15 | 6 | 101 |
+| Screen | 21 | yes | 25 | 10 | 15 | 0 | 120 |
 | Colour | 9 | yes | 5 | 1 | 4 | 0 | 53 |
-| Format | 52 | yes | 18 | 5 | 12 | 1 | 282 |
+| Format | 52 | yes | 18 | 8 | 10 | 0 | 282 |
 | History | 9 | yes | 8 | 3 | 5 | 0 | 51 |
-| Tabs | 5 | yes | 8 | 0 | 6 | 2 | 37 |
+| Tabs | 5 | yes | 8 | 0 | 8 | 0 | 41 |
 | Scroll | 6 | yes | 7 | 0 | 7 | 0 | 66 |
-| **Total** | **100** | **100 of 100** | **71** | **13** | **49** | **9** | **590** |
+| **Total** | **102** | **102 of 102** | **71** | **22** | **49** | **0** | **613** |
 
 `tools/licensing.flang` is 22 functions, all total, 30 examples; `ярлыки.flang`
 is 5 functions, all total, 6 examples. No ledger is printed for the guard
 because it declares a `план`, whose laws the binary does not judge — and it says
 so itself.
 
-Examples went from 187 to 590: 390 of them are the reference's answers, carried
-in by the two diffs (the sections above). Claims went from 67 to 71 and proved
-ones from 12 to 13 — added by FOUR new functions, not by 82 new examples. Adding
-examples does not prove anything, and the `сетка N` column grows for exactly
-that reason: a bigger grid is still a grid.
+Examples went from 187 to 613: 390 of them are the reference's answers, carried
+in by the two diffs (the sections above). Adding examples does not prove
+anything, and the `сетка N` column grows for exactly that reason: a bigger grid
+is still a grid.
 
-Thirteen proved claims is 18% of seventy-one. The rest is grid and declared.
-That is written down as it is; nobody here will call a grid a proof.
+**The «declared, not proved» column is gone — it is zero.** There were nine: six
+in «Screen», two in «Tabs», one in «Format». They were not closed by proving the
+old wording: three of the nine were simply FALSE at the edges of the numeric
+type — on «not a number» (`0 делить на 0`) and on infinity (`1 делить на 0`),
+where numbers carry no order at all. They were rewritten so that what they say is
+true, and only then proved; what exactly changed is written next to the functions
+themselves.
+
+Twenty-two proved claims is 31% of seventy-one. The rest is grid. That is
+written down as it is; nobody here will call a grid a proof.
 
 ---
 
@@ -476,6 +485,17 @@ measurement, not a running check, and re-taking it means fetching that file out
 of `6bb627cc45966bfc24cc2680e1eec2196fb2a43d` (see the diff section) and
 running `run.sh --замер` again. Anyone who changes `«Обрезать по ячейкам»` or
 `«Кадр»` and cares about the 5.3× should do exactly that.
+
+**Rewriting the clipping automaton on 13 September 2026 cost 26% of the time,
+and here is the number.** `«Шаг обрезки»` had to be rewritten so its claims
+could be proved (the ledger section above): a four-case sum split became a
+single record, and the state transition moved into a function of its own. The
+measurement is not Go but the emitted C (`cc -O2 -flto`, same host, best of
+three runs): 20,000 clips of a 117-character coloured line — **2.19 s before,
+2.76 s after**; for `«Ширина без последовательностей»` on the same input, 0.58 s
+against 0.69 s. This does not recompute the Go table above: its opponent and its
+stopwatch live in history. Behaviour did not change on a single input: 2,016
+requests to both emitted programs, 0 divergences.
 
 So: **postconditions are written, and a working build is emitted without
 them.** 10 ms a frame is 99 frames a second; 56 ms is 18 frames a second and a
