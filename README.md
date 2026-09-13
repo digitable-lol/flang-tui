@@ -44,12 +44,12 @@ tree: `./ярлык проверка` is what a person types, not an internal na
 
 | File | Module | What it does | Reference in digitdisk |
 |---|---|---|---|
-| `flang/screen.flang` | «Screen» | fill bar, clipping by *printing* cells, fitting a section into a height, the whole frame | `ui/widgets.go` `bar`/`clip`/`plainWidth`, `ui/screen.go` `frame` |
-| `flang/colour.flang` | «Colour» | truecolour, the xterm-256 cube, the sixteen basics | `ui/theme.go` `seq`, `cube256` |
-| `flang/format.flang` | «Format» | sizes, shares, percentages, durations, grouped counters, the em-dash placeholder, truncation, **column alignment**, **both editions: Russian and English** | all of `lang/format.go`, `ui/widgets.go` `fit`/`right`; the old 0.5.0 addresses — `report/report.go`, `report/places.go`, `ui/screen.go`, `sysinfo/sysinfo.go` |
-| `flang/history.flang` | «History» | running-graph history and its row of glyphs | `ui/screen.go` `push`, `ui/widgets.go` `spark` |
-| `flang/tabs.flang` | «Tabs» | tabs: state plus keypress → state | `ui/screen.go` `handle` |
-| `flang/scroll.flang` | «Scroll» | scrolling: offset, viewport height, content length, keypress → offset | `ui/screen.go` `handle` + `frame` |
+| `flang/screen/screen.flang` | «Screen» | fill bar, clipping by *printing* cells, fitting a section into a height, the whole frame | `ui/widgets.go` `bar`/`clip`/`plainWidth`, `ui/screen.go` `frame` |
+| `flang/colour/colour.flang` | «Colour» | truecolour, the xterm-256 cube, the sixteen basics | `ui/theme.go` `seq`, `cube256` |
+| `flang/format/format.flang` | «Format» | sizes, shares, percentages, durations, grouped counters, the em-dash placeholder, truncation, **column alignment**, **both editions: Russian and English** | all of `lang/format.go`, `ui/widgets.go` `fit`/`right`; the old 0.5.0 addresses — `report/report.go`, `report/places.go`, `ui/screen.go`, `sysinfo/sysinfo.go` |
+| `flang/history/history.flang` | «History» | running-graph history and its row of glyphs | `ui/screen.go` `push`, `ui/widgets.go` `spark` |
+| `flang/tabs/tabs.flang` | «Tabs» | tabs: state plus keypress → state | `ui/screen.go` `handle` |
+| `flang/scroll/scroll.flang` | «Scroll» | scrolling: offset, viewport height, content length, keypress → offset | `ui/screen.go` `handle` + `frame` |
 
 `tools/licensing.flang` is the licence guard: a plan for `flang io`, the method
 borrowed from digitdisk. There is no Python, no JavaScript and **no Go** in this
@@ -80,6 +80,8 @@ Then, and there is no `make` here any more:
 ./ярлык печать      # emit to Go and to C, build both
 ./ярлык пределы     # F3: where the emitted program's depth limit binds
 ./ярлык лицензии    # the licence guard
+./ярлык пакеты      # six packages: a lock with a name, a version and a ledger
+./ярлык спеки       # the spec system agrees: all proved, none weakened
 ```
 
 `ярлык` is 112 lines of `sh`, 56 of them code, and it holds **no list**: it asks
@@ -95,7 +97,75 @@ One thing the Makefile did carry has been dropped on purpose: the list of
 module names (`МОДУЛИ = screen colour format history tabs scroll`). It could
 drift from the tree in silence — a seventh module would simply not be checked
 and not be emitted, and everything would stay green. The shortcuts say
-`flang/*.flang` instead; there is nothing left to drift.
+`flang/*/*.flang` instead; there is nothing left to drift.
+
+## Depend on it, instead of copying files
+
+Every module has its own directory and its own `flang.package` manifest,
+because `flang package` looks for the manifest **next to** the entry file — it
+does not search upwards — and the `имя` field must match the module's name. Six
+modules, six manifests, and they can only live apart.
+
+```sh
+./ярлык пакеты
+```
+
+```
+colour.flang-package 18574 байт
+format.flang-package 98013 байт
+history.flang-package 26437 байт
+screen.flang-package 51739 байт
+scroll.flang-package 27472 байт
+tabs.flang-package 20504 байт
+```
+
+A package is the lock's payload plus a name, a version, a source and a **ledger
+of what is proved** — 25 entries for «Screen». It is built from checked code
+only: `flang package` runs the same checks as `flang check` and refuses a
+program with a single finding.
+
+One line pulls it in, and no new word in the language:
+
+```
+модуль «Моя оболочка»
+использует «Screen» из "flang-tui/flang/screen/screen.flang-package"
+```
+
+No dependency sources on disk, no store, no network: the code is already in the
+file. The library's postconditions travel with it and are proved again on your
+side — nothing is taken on trust.
+
+The packages themselves are not kept in the tree: they are machine output, like
+`out-go/` and `out-c/`, and the shortcut builds them from the sources next door.
+
+Six modules give six packages, not one: `«Нажатие»` is declared in both `tabs`
+and `scroll` as different types, and an umbrella module over all six does not
+type-check — 48 findings. That is the design, not an oversight: the bands of a
+screen are independent, and nobody asked for them in one program.
+
+## Specs: a rule the compiler proves
+
+`fspec/` is the same spec system the language tree uses, and the one `flang new`
+drops into every new package: `guard.flang` finds the specs, asks the compiler
+for a proof report and checks it against the `snapshot.txt` fingerprint, while
+`policy.flang` decides what counts as agreement — everything proved, and no
+claim of a predecessor weakened.
+
+```sh
+./ярлык спеки
+```
+
+```
+спеки согласны: спек 1, утверждений 3, и каждое доказано из нуля аксиом;
+обещаний в слепке 3, и у каждого цель та же
+```
+
+An honest limit: a spec that **calls** a library module and restates its
+postcondition comes back as "сетка" (grid-checked), not "доказано" — today's
+kernel does not carry a callee's postcondition into the caller's goal. The
+policy does not accept a grid, so the specs here state a rule of the domain
+rather than paraphrase the modules' promises: those are already proved inside
+the modules and listed by `./ярлык ведомость`.
 
 Emission puts each module in its own `out-go/<name>` and `out-c/<name>`. All
 eight emit targets name the Go module `flangprogram`, so after emission the
@@ -313,7 +383,7 @@ with the same `git show` on `6bb627cc45966bfc24cc2680e1eec2196fb2a43d`
 0.8.0 three things change:
 
 * `DIGITDISK_REF=df60027`;
-* ONE module is emitted (`flang/format.flang`), and its Go module name must be
+* ONE module is emitted (`flang/format/format.flang`), and its Go module name must be
   anything but `flangformat`: digitdisk already keeps the `ui-flang/flang-tui`
   submodule under that name, and `go mod` refuses two replacements;
 * the differ goes into `host/internal/lang/` (that is where all the arithmetic
